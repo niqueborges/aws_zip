@@ -58,10 +58,10 @@ functions:
       - httpApi:  
           path: /v1/vision/faces
           method: post
-    timeout: 60  # Aumentado para 60 segundos
+    timeout: 60  
     environment:
       BUCKET_NAME: "photogrupo3"
-      # AWS_REGION removido, não é necessário
+      
 
   visionDetectPets:
     handler: handlers/lambda_pet.handler_pets
@@ -69,10 +69,10 @@ functions:
       - httpApi:
           path: /v1/vision/pets
           method: post  
-    timeout: 60  # Aumentado para 60 segundos
+    timeout: 60  
     environment:
       BUCKET_NAME: "photogrupo3v1"
-      # AWS_REGION removido, não é necessário
+      
 
 plugins:
   - serverless-python-requirements
