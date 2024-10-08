@@ -18,7 +18,7 @@ provider:
       Action:
         - rekognition:DetectFaces
         - rekognition:DetectLabels
-      Resource: arn:aws:rekognition:${self:provider.region}:${aws:accountId}:face/*
+      Resource: "*"  # Pode ser específico, mas "*" funciona para testes
 
     - Effect: Allow
       Action: s3:GetObject
@@ -52,26 +52,27 @@ functions:
           path: /v2
           method: get
 
-  functions:
   visionDetectFaces:
     handler: handlers/lambda_handler.vision
     events:
-      - http:
+      - httpApi:  # Corrigido a indentação
           path: /v1/vision/faces
           method: post
     timeout: 30
     environment:
-      BUCKET_NAME: "photogrupo3v2"
+      BUCKET_NAME: "photogrupo3"
       AWS_REGION: "us-east-1"
 
-
   visionDetectPets:
-    handler: handlers/lambda_pet.handler_pets  
-    timeout: 30
+    handler: handlers/lambda_pet.handler_pets
     events:
-      - http:
-          path: /v2/vision/pets
-          method: post
+      - httpApi:
+          path: /v1/vision/pets
+          method: post  
+    timeout: 30
+    environment:
+      BUCKET_NAME: "photogrupo3v1"
+      AWS_REGION: "us-east-1"
 
 plugins:
   - serverless-python-requirements
@@ -80,3 +81,4 @@ plugins:
 custom:
   pythonRequirements:
     dockerizePip: false
+
