@@ -1,4 +1,4 @@
-# **API Vision - Avaliação Sprint 8**
+# **API Vision - Detecção de Emoções e Cães Pastores**
 
 ## **👥 Desenvolvedores**
 | [<img loading="lazy" src="https://avatars.githubusercontent.com/u/69771619?v=4" width="115" alt="Carlos Altomare Catao">](https://github.com/CarlosCatao) <br>[Carlos Altomare Catao](https://github.com/CarlosCatao) | [<img loading="lazy" src="https://avatars.githubusercontent.com/u/130758430?v=4" width="115" alt="Hugo Bessa Susini Ribeiro">](https://github.com/hsusini) <br>[Hugo Bessa Susini Ribeiro](https://github.com/hsusini) | [<img loading="lazy" src="https://avatars.githubusercontent.com/u/165324231?v=4" width="115" alt="Paulo Henrique de Oliveira Carvalho">](https://github.com/Paulo-Henrique06) <br>[Paulo Henrique de Oliveira Carvalho](https://github.com/Paulo-Henrique06) | [<img loading="lazy" src="https://avatars.githubusercontent.com/u/95103547?v=4" width="115" alt="Monique da Silva Borges">](https://github.com/niqueborges) <br>[Monique da Silva Borges](https://github.com/niqueborges) |
@@ -27,7 +27,7 @@
 
 🚀 **Status**: Em desenvolvimento
 
-Este projeto tem como objetivo criar uma **API de Visão Computacional**, utilizando serviços da **AWS** para analisar emoções em imagens e identificar a presença de pets. As principais tecnologias envolvem o **Amazon Rekognition** para análise de imagens e o **Amazon Bedrock** para geração de respostas relacionadas a pets. O projeto também integra o **CloudWatch** para monitoramento de logs e desempenho. O projeto não armazena informações localmente, pois as imagens são processadas diretamente dos **Buckets do S3** e os resultados são retornados ao usuário no formato de resposta JSON.
+Este projeto visa desenvolver uma **API de Visão Computacional**, utilizando serviços da **AWS** para analisar emoções em imagens e identificar cães pastores. As principais tecnologias envolvem o **Amazon Rekognition** para análise de imagens e o **Amazon Bedrock**
 
 ---
 

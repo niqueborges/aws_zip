@@ -24,6 +24,29 @@ def check_env_vars():
     if missing_vars:
         raise EnvironmentError(f"Faltando variáveis de ambiente: {', '.join(missing_vars)}")
 
+### Adicionando as Funções para as Rotas ###
+
+def health(event, context):
+    """Rota GET / - Retorna uma mensagem simples de saúde."""
+    return create_response(200, {
+        "message": "Go Serverless v3.0! Your function executed successfully!",
+        "input": event
+    })
+
+def v1_description(event, context):
+    """Rota GET /v1 - Retorna a versão 1 da API."""
+    return create_response(200, {
+        "message": "VISION api version 1."
+    })
+
+def v2_description(event, context):
+    """Rota GET /v2 - Retorna a versão 2 da API."""
+    return create_response(200, {
+        "message": "VISION api version 2."
+    })
+
+### Função principal de detecção de emoções faciais ###
+
 def vision(event, context):
     """Detecta emoções faciais em uma imagem armazenada no S3."""
     try:

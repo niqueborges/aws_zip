@@ -32,35 +32,35 @@ provider:
 
 functions:
   visionHealthCheck:
-    handler: visao-computacional/handlers/lambda_handler.health
+    handler: handlers/lambda_handler.health
     events:
       - httpApi:
           path: /
           method: get
 
   visionGetDescriptionV1:
-    handler: visao-computacional/handlers/lambda_handler.v1_description
+    handler: handlers/lambda_handler.v1_description
     events:
       - httpApi:
           path: /v1
           method: get
 
   visionGetDescriptionV2:
-    handler: visao-computacional/handlers/lambda_handler.v2_description
+    handler: handlers/lambda_handler.v2_description
     events:
       - httpApi:
           path: /v2
           method: get
 
   visionDetectFaces:
-    handler: visao-computacional/handlers/vision_face.handler_face
+    handler: handlers/vision_face.handler_face
     events:
       - http:
           path: /v1/vision/faces
           method: post
 
   visionDetectPets:
-    handler: visao-computacional/handlers/lambda_pet.handler_pets
+    handler: serverlesshandlers/lambda_pet.handler_pets
     timeout: 30
     events:
       - http:
@@ -74,6 +74,7 @@ plugins:
 custom:
   pythonRequirements:
     dockerizePip: false
+
 
   
 
