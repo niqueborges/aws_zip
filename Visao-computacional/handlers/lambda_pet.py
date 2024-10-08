@@ -4,7 +4,8 @@ import logging
 from datetime import datetime
 from dotenv import load_dotenv
 import os
-from vision_face import detect_emotions  # Importa a função que detecta emoções
+from vision_face import detect_face_emotions  # Importa a função correta que detecta emoções
+# Importa a função que detecta emoções
 
 # Carrega as credenciais do ambiente
 load_dotenv()

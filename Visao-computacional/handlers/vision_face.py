@@ -13,7 +13,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
 sys.path.append(parent_dir)
 
-from services.bedrock_service import invoke_bedrock_model
+from services.bedrock_runtime import invoke_bedrock_model
 from services.get_image import get_image_details, detect_face_emotions
 
 def validate_input(body):
