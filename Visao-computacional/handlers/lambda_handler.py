@@ -4,21 +4,17 @@ import boto3
 import logging
 from datetime import datetime
 from botocore.exceptions import ClientError
-from dotenv import load_dotenv
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
-# Carregar variáveis de ambiente
-load_dotenv()
-
 # Inicializa o cliente AWS Rekognition
-rekognition = boto3.client('rekognition', region_name='us-east-1')
+rekognition = boto3.client('rekognition', region_name=os.getenv('AWS_REGION', 'us-east-1'))
 
 def check_env_vars():
     """Verifica se todas as variáveis de ambiente obrigatórias estão definidas."""
-    required_vars = ['AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'BUCKET_NAME']
+    required_vars = ['AWS_REGION', 'BUCKET_NAME']
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     
     if missing_vars:

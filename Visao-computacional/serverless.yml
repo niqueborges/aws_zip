@@ -52,15 +52,21 @@ functions:
           path: /v2
           method: get
 
+  functions:
   visionDetectFaces:
-    handler: handlers/vision_face.handler_face
+    handler: handlers/lambda_handler.vision
     events:
       - http:
           path: /v1/vision/faces
           method: post
+    timeout: 30
+    environment:
+      BUCKET_NAME: "photogrupo3v2"
+      AWS_REGION: "us-east-1"
+
 
   visionDetectPets:
-    handler: serverlesshandlers/lambda_pet.handler_pets
+    handler: handlers/lambda_pet.handler_pets  
     timeout: 30
     events:
       - http:
@@ -74,8 +80,3 @@ plugins:
 custom:
   pythonRequirements:
     dockerizePip: false
-
-
-  
-
-

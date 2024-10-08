@@ -80,4 +80,4 @@ def create_bucket(bucket_name):
     print(f"Variáveis de ambiente adicionadas com sucesso.")
 
 if __name__ == "__main__":
-    create_bucket("photogrupo3")
+    create_bucket("photogrupo3v2")
