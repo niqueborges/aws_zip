@@ -1,0 +1,80 @@
+service: visao-computacional
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-east-1
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: arn:aws:logs:*:*:*
+
+    - Effect: Allow
+      Action:
+        - rekognition:DetectFaces
+        - rekognition:DetectLabels
+      Resource: arn:aws:rekognition:${self:provider.region}:${aws:accountId}:face/*
+
+    - Effect: Allow
+      Action: s3:GetObject
+      Resource: arn:aws:s3:::photogrupo3/*
+
+    - Effect: Allow
+      Action:
+        - bedrock:InvokeModel
+        - bedrock:ListModels
+      Resource: "*"
+
+functions:
+  visionHealthCheck:
+    handler: visao-computacional/handlers/lambda_handler.health
+    events:
+      - httpApi:
+          path: /
+          method: get
+
+  visionGetDescriptionV1:
+    handler: visao-computacional/handlers/lambda_handler.v1_description
+    events:
+      - httpApi:
+          path: /v1
+          method: get
+
+  visionGetDescriptionV2:
+    handler: visao-computacional/handlers/lambda_handler.v2_description
+    events:
+      - httpApi:
+          path: /v2
+          method: get
+
+  visionDetectFaces:
+    handler: visao-computacional/handlers/vision_face.handler_face
+    events:
+      - http:
+          path: /v1/vision/faces
+          method: post
+
+  visionDetectPets:
+    handler: visao-computacional/handlers/lambda_pet.handler_pets
+    timeout: 30
+    events:
+      - http:
+          path: /v2/vision/pets
+          method: post
+
+plugins:
+  - serverless-python-requirements
+  - serverless-offline
+
+custom:
+  pythonRequirements:
+    dockerizePip: false
+
+  
+
+

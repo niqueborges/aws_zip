@@ -1,0 +1,167 @@
+{
+  "info": {
+      "_postman_id": "12345678-abcd-efgh-ijkl-1234567890ab",
+      "name": "Serverless Offline - Vision API",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+      {
+          "name": "Health Check",
+          "request": {
+              "method": "GET",
+              "header": [],
+              "url": {
+                  "raw": "http://localhost:3000/",
+                  "protocol": "http",
+                  "host": [
+                      "localhost"
+                  ],
+                  "port": "3000",
+                  "path": [""]
+              }
+          }
+      },
+      {
+          "name": "Vision Description V1",
+          "request": {
+              "method": "POST",
+              "header": [
+                  {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                  }
+              ],
+              "body": {
+                  "mode": "raw",
+                  "raw": "{ \"bucket\": \"photogrupo3\", \"imageName\": \"example_image.jpg\" }"
+              },
+              "url": {
+                  "raw": "http://localhost:3000/v1",
+                  "protocol": "http",
+                  "host": [
+                      "localhost"
+                  ],
+                  "port": "3000",
+                  "path": [
+                      "v1"
+                  ]
+              }
+          }
+      },
+      {
+          "name": "Vision Description V2",
+          "request": {
+              "method": "POST",
+              "header": [
+                  {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                  }
+              ],
+              "body": {
+                  "mode": "raw",
+                  "raw": "{ \"bucket\": \"photogrupo3\", \"imageName\": \"example_image.jpg\" }"
+              },
+              "url": {
+                  "raw": "http://localhost:3000/v2",
+                  "protocol": "http",
+                  "host": [
+                      "localhost"
+                  ],
+                  "port": "3000",
+                  "path": [
+                      "v2"
+                  ]
+              }
+          }
+      },
+      {
+          "name": "Rekognition",
+          "request": {
+              "method": "POST",
+              "header": [
+                  {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                  }
+              ],
+              "body": {
+                  "mode": "raw",
+                  "raw": "{ \"bucket\": \"photogrupo3\", \"imageName\": \"example_image.jpg\" }"
+              },
+              "url": {
+                  "raw": "http://localhost:3000/dev/rekognition",
+                  "protocol": "http",
+                  "host": [
+                      "localhost"
+                  ],
+                  "port": "3000",
+                  "path": [
+                      "dev",
+                      "rekognition"
+                  ]
+              }
+          }
+      },
+      {
+          "name": "Detect Faces",
+          "request": {
+              "method": "POST",
+              "header": [
+                  {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                  }
+              ],
+              "body": {
+                  "mode": "raw",
+                  "raw": "{ \"bucket\": \"photogrupo3\", \"imageName\": \"example_face_image.jpg\" }"
+              },
+              "url": {
+                  "raw": "http://localhost:3000/dev/v1/vision/faces",
+                  "protocol": "http",
+                  "host": [
+                      "localhost"
+                  ],
+                  "port": "3000",
+                  "path": [
+                      "dev",
+                      "v1",
+                      "vision",
+                      "faces"
+                  ]
+              }
+          }
+      },
+      {
+          "name": "Detect Pets",
+          "request": {
+              "method": "POST",
+              "header": [
+                  {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                  }
+              ],
+              "body": {
+                  "mode": "raw",
+                  "raw": "{ \"bucket\": \"photogrupo3\", \"imageName\": \"example_pet_image.jpg\" }"
+              },
+              "url": {
+                  "raw": "http://localhost:3000/dev/v2/vision/pets",
+                  "protocol": "http",
+                  "host": [
+                      "localhost"
+                  ],
+                  "port": "3000",
+                  "path": [
+                      "dev",
+                      "v2",
+                      "vision",
+                      "pets"
+                  ]
+              }
+          }
+      }
+  ]
+}
