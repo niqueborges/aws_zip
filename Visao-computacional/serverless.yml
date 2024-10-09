@@ -56,7 +56,7 @@ functions:
     handler: handlers/lambda_handler.vision
     events:
       - httpApi:  
-          path: /v1/vision/faces
+          path: /v1/vision
           method: post
     timeout: 60 
     environment:
@@ -68,7 +68,7 @@ functions:
     handler: handlers/lambda_pet.handler_pets
     events:
       - httpApi:
-          path: /v1/vision/pets
+          path: /v2/vision
           method: post  
     timeout: 60
     environment:
@@ -83,3 +83,9 @@ plugins:
 custom:
   pythonRequirements:
     dockerizePip: false
+    fileName: ../requirements.txt  
+
+
+environment:
+  dotenv:
+    path: ../.env  

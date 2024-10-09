@@ -9,7 +9,7 @@ VERSION_2_MESSAGE = "VISION API version 2."
 
 # Inicializa clientes para S3 e Bedrock
 s3_client = boto3.client('s3')
-bedrock_client = boto3.client('bedrock-runtime')
+bedrock_client = boto3.client('bedrock_runtime')
 
 def health(event, context):
     """Health check endpoint."""
