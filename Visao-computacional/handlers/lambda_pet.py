@@ -28,7 +28,7 @@ session = boto3.Session(
 )
 
 rekognition = boto3.client("rekognition")
-bedrock = boto3.client("bedrock-runtime")  # Cliente para Bedrock
+bedrock = boto3.client("bedrock_runtime")  # Cliente para Bedrock
 
 def detect_labels(bucket: str, image_name: str) -> dict:
     """Detecta rótulos em uma imagem armazenada no S3 usando Rekognition."""
@@ -120,7 +120,7 @@ def handler_pastor(event, context):
         image_path = f"myphotos/{image_name}"
 
         # Detecta emoções na imagem
-        response = detect_emotions(bucket, image_path)
+        response = detect_face_emotions(bucket, image_path)
         logger.info("Rekognition response: %s", json.dumps(response))
 
         faces = [
@@ -142,7 +142,7 @@ def handler_pastor(event, context):
             # Gera a data e hora atual em UTC
             result = {
                 "url_to_image": f"https://{bucket}.s3.amazonaws.com/{image_path}",
-                "created_image": datetime.utcnow().strftime("%d-%m-%Y %H:%M:%S"),
+                "created_image": datetime.now(datetime.timezone.utc).strftime("%d-%m-%Y %H:%M:%S"),
                 "faces": faces or None,
                 "pets": pastor_analysis,
             }

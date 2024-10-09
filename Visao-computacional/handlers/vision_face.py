@@ -74,7 +74,7 @@ def v1_vision(event, context):
 
     # Integração com AWS Bedrock
     text_input = f"Análise da imagem: {body['imageName']}"
-    bedrock_response = invoke_bedrock_model(model_id="amazon.titan-image-generator-v2:0", text=text_input)
+    bedrock_response = invoke_bedrock_model(model_id="amazon.titan-text-express-v1", text=text_input)
     
     if "error" in bedrock_response:
         logger.error("Erro ao processar a imagem com Bedrock: %s", bedrock_response["error"])
