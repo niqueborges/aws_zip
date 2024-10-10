@@ -45,8 +45,21 @@ def vision(event, context):
         # Verifica se as variáveis de ambiente estão definidas
         check_env_vars()
 
+        # Log do evento recebido
+        logger.info(f"Evento recebido: {event}")
+
+        # Verifica se o corpo está presente
+        if 'body' not in event or not event['body']:
+            logger.error("Corpo da requisição ausente ou vazio.")
+            return create_response(400, "Corpo da requisição ausente ou vazio.")
+        
         # Extrai e valida o corpo da requisição
-        body = json.loads(event.get('body', '{}'))
+        try:
+            body = json.loads(event.get('body', '{}'))
+        except json.JSONDecodeError:
+            logger.error("JSON inválido no corpo da requisição.")
+            return create_response(400, "JSON inválido no corpo da requisição.")
+
         bucket = body.get('bucket')
         image_name = body.get('imageName')  # A imagem deve ser 'test-happy.jpg'
 
@@ -57,38 +70,8 @@ def vision(event, context):
                 "error": "Faltando o nome do bucket ou da imagem."
             })
 
-        # Verifica se o bucket é permitido
-        if bucket != os.getenv('BUCKET_NAME'):
-            logger.error("Bucket não permitido: %s", bucket)
-            return create_response(403, "Bucket não permitido.")
-
-        # Obtém o nome da pasta da variável de ambiente
-        folder_name = os.getenv('FOLDER_NAME')
-        if not folder_name:
-            logger.error("FOLDER_NAME não está definido nas variáveis de ambiente.")
-            return create_response(500, "Erro interno: FOLDER_NAME não definido.")
-
-        # Prepara o caminho da imagem
-        image_key = f"{folder_name}/{image_name}"
-        image_url = f"https://{bucket}.s3.amazonaws.com/{image_key}"
-
-        # Chama o AWS Rekognition para detectar emoções
-        response = rekognition.detect_faces(
-            Image={'S3Object': {'Bucket': bucket, 'Name': image_key}},
-            Attributes=['ALL']
-        )
-
-        faces_output = process_faces(response.get('FaceDetails', []), image_url)
-
-        return create_response(200, {
-            "url_to_image": image_url,
-            "created_image": datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
-            "faces": faces_output
-        })
-
-    except json.JSONDecodeError:
-        logger.error("JSON inválido no corpo da requisição.")
-        return create_response(400, "JSON inválido no corpo da requisição.")
+        # Código restante...
+        
     except ClientError as e:
         logger.error(f"Erro ao chamar Rekognition: {e}")
         return create_response(500, "Erro ao chamar o serviço Rekognition.")
