@@ -1,40 +1,40 @@
-import boto3
 import json
 import logging
-from datetime import datetime
-from dotenv import load_dotenv
 import os
-from services.get_image import detect_face_emotions  # Importa a função correta que detecta emoções
-from vision_face import detect_face_emotions  # Importa a função correta que detecta emoções
-# Importa a função que detecta emoções
+import boto3
+from datetime import datetime
+import sys
 
-# Carrega as credenciais do ambiente
-load_dotenv()
+# Adiciona o diretório do projeto ao sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from services.get_image import detect_face_emotions  # Importa a função correta que detecta emoções
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Variáveis para acesso
-S3_BUCKET = "photogrupo3"  # Nome do bucket S3
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")  # Access Key ID da AWS
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")  # Secret Key da AWS
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")  # Região AWS
+# Inicializa a sessão boto3 com credenciais do AWS CLI
+session = boto3.Session()
 
-# Inicializa a sessão boto3 com credenciais
-session = boto3.Session(
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    region_name=AWS_REGION,
-)
+rekognition = session.client("rekognition")
+bedrock = session.client("bedrock-runtime")  # Cliente para Bedrock
 
-rekognition = boto3.client("rekognition")
-bedrock = boto3.client("bedrock_runtime")  # Cliente para Bedrock
+# Obtém o nome da pasta do ambiente
+FOLDER_NAME = os.getenv("FOLDER_NAME", "myphotos")  # Nome da pasta padrão
+
+def check_env_vars():
+    """Verifica se todas as variáveis de ambiente obrigatórias estão definidas."""
+    required_vars = ['FOLDER_NAME']
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    
+    if missing_vars:
+        raise EnvironmentError(f"Faltando variáveis de ambiente: {', '.join(missing_vars)}")
 
 def detect_labels(bucket: str, image_name: str) -> dict:
     """Detecta rótulos em uma imagem armazenada no S3 usando Rekognition."""
+    image_path = f"{FOLDER_NAME}/{image_name}"
     try:
-        image_path = f"myphotos/{image_name}"
         response = rekognition.detect_labels(
             Image={"S3Object": {"Bucket": bucket, "Name": image_path}},
             MaxLabels=10,
@@ -100,64 +100,71 @@ def generate_pastor_tips(labels: list) -> dict:
             return {"error": str(e)}
 
     logger.warning("Nenhuma raça identificada.")
-    return []
+    return {"labels": [], "Dicas": "Nenhuma dica disponível."}
 
-def validate_input(body):
-    """Valida os campos obrigatórios no corpo da requisição."""
-    if not body.get("bucket") or not body.get("imageName"):
-        raise ValueError("Os campos 'bucket' e 'imageName' são obrigatórios.")
+def validate_input(body: dict) -> tuple:
+    """Valida os campos obrigatórios no corpo da requisição."""    
+    required_keys = ("bucket", "imageName", "folderName")
+    if not all(key in body for key in required_keys):
+        raise ValueError("Os campos 'bucket', 'imageName' e 'folderName' são obrigatórios.")
+    
+    if body["folderName"] != FOLDER_NAME:
+        raise ValueError(f"A pasta deve ser '{FOLDER_NAME}'.")
+
     return body["bucket"], body["imageName"]
 
-def handler_pastor(event, context):
+def handler_pastor(event: dict, context) -> dict:
     """Processa a imagem e gera dicas sobre cães pastores."""
     try:
         body = json.loads(event["body"])
         logger.info("Event received: %s", json.dumps(event))
 
-        # Valida e obtém bucket e nome da imagem
+        # Valida e obtém bucket, nome da imagem e nome da pasta
         bucket, image_name = validate_input(body)
 
-        # Adiciona a pasta 'myphotos' ao nome da imagem
-        image_path = f"myphotos/{image_name}"
-
         # Detecta emoções na imagem
-        response = detect_face_emotions(bucket, image_path)
+        response = detect_face_emotions(bucket, f"{FOLDER_NAME}/{image_name}")
         logger.info("Rekognition response: %s", json.dumps(response))
 
-        faces = [
-            {
-                "position": face["BoundingBox"],
-                "classified_emotion": max(face["Emotions"], key=lambda e: e["Confidence"], default={"Type": "Unknown", "Confidence": 0})["Type"],
-                "classified_emotion_confidence": max(face["Emotions"], key=lambda e: e["Confidence"], default={"Type": "Unknown", "Confidence": 0})["Confidence"],
-            }
-            for face in response.get("FaceDetails", [])
-        ]
+        faces = extract_faces(response)
 
         # Detectando pets usando Rekognition (labels)
-        rekognition_label_response = detect_labels(bucket, image_path)
+        rekognition_label_response = detect_labels(bucket, image_name)
         labels = rekognition_label_response.get("Labels", [])
 
         # Verifica se há cães pastores e gera dicas
         pastor_analysis = generate_pastor_tips(labels)
-        if pastor_analysis:
-            # Gera a data e hora atual em UTC
-            result = {
-                "url_to_image": f"https://{bucket}.s3.amazonaws.com/{image_path}",
-                "created_image": datetime.now(datetime.timezone.utc).strftime("%d-%m-%Y %H:%M:%S"),
-                "faces": faces or None,
-                "pets": pastor_analysis,
-            }
+        result = create_result(bucket, image_name, faces, pastor_analysis)
 
-            logger.info("Response: %s", json.dumps(result))
-            return {"statusCode": 200, "body": json.dumps(result)}
-
-        logger.info("Nenhum cão pastor detectado.")
-        return {"statusCode": 200, "body": json.dumps({"message": "No pastor dogs detected"})}
+        logger.info("Response: %s", json.dumps(result))
+        return {"statusCode": 200, "body": json.dumps(result)}
 
     except ValueError as ve:
         logger.error(f"Valor inválido: {str(ve)}")
         return {"statusCode": 400, "body": json.dumps({"error": str(ve)})}
     except Exception as e:
         logger.error(f"Erro ao processar a imagem: {str(e)}")
-        return {"statusCode": 500, "body": json.dumps({"error": "Failed to process the image"})}
+        return {"statusCode": 500, "body": json.dumps({"error": "Falha ao processar a imagem"})}
 
+def extract_faces(response: dict) -> list:
+    """Extrai as emoções das faces detectadas da resposta do Rekognition."""
+    return [
+        {
+            "position": face["BoundingBox"],
+            "classified_emotion": max(face["Emotions"], key=lambda e: e["Confidence"], default={"Type": "Unknown", "Confidence": 0})["Type"],
+            "classified_emotion_confidence": max(face["Emotions"], key=lambda e: e["Confidence"], default={"Type": "Unknown", "Confidence": 0})["Confidence"],
+        }
+        for face in response.get("FaceDetails", [])
+    ]
+
+def create_result(bucket: str, image_name: str, faces: list, pastor_analysis: dict) -> dict:
+    """Cria o resultado final a ser retornado na resposta da API."""
+    return {
+        "url_to_image": f"https://{bucket}.s3.amazonaws.com/{FOLDER_NAME}/{image_name}",
+        "created_image": datetime.now(datetime.timezone.utc).strftime("%d-%m-%Y %H:%M:%S"),
+        "faces": faces or None,
+        "pets": pastor_analysis,
+    }
+
+# Verifica se as variáveis de ambiente estão definidas antes de iniciar o processamento
+check_env_vars()

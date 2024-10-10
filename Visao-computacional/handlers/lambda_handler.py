@@ -1,47 +1,43 @@
-import json
-import os
-import boto3
+import json  
 import logging
-from datetime import datetime
+import os
 from botocore.exceptions import ClientError
+from datetime import datetime
+import boto3
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
-# Inicializa o cliente AWS Rekognition
-rekognition = boto3.client('rekognition', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+# Inicializa a sessão boto3 com credenciais do AWS CLI
+session = boto3.Session()
+rekognition = session.client("rekognition")
 
 def check_env_vars():
     """Verifica se todas as variáveis de ambiente obrigatórias estão definidas."""
-    required_vars = ['AWS_REGION', 'BUCKET_NAME']
+    required_vars = ['BUCKET_NAME', 'FOLDER_NAME']
     missing_vars = [var for var in required_vars if not os.getenv(var)]
     
     if missing_vars:
         raise EnvironmentError(f"Faltando variáveis de ambiente: {', '.join(missing_vars)}")
 
-### Adicionando as Funções para as Rotas ###
+def create_response(status_code, body):
+    """Cria uma resposta para a API."""
+    return {
+        'statusCode': status_code,
+        'body': json.dumps(body)
+    }
 
-def health(event, context):
-    """Rota GET / - Retorna uma mensagem simples de saúde."""
-    return create_response(200, {
-        "message": "Go Serverless v3.0! Your function executed successfully!",
-        "input": event
-    })
-
-def v1_description(event, context):
-    """Rota GET /v1 - Retorna a versão 1 da API."""
-    return create_response(200, {
-        "message": "VISION api version 1."
-    })
-
-def v2_description(event, context):
-    """Rota GET /v2 - Retorna a versão 2 da API."""
-    return create_response(200, {
-        "message": "VISION api version 2."
-    })
-
-### Função principal de detecção de emoções faciais ###
+def process_faces(face_details, image_url):
+    """Processa os detalhes das faces retornados pela API Rekognition."""
+    faces_output = []
+    for face in face_details:
+        faces_output.append({
+            'emotion': max(face['Emotions'], key=lambda x: x['Confidence'])['Type'],
+            'confidence': max(face['Emotions'], key=lambda x: x['Confidence'])['Confidence'],
+            'bounding_box': face['BoundingBox']
+        })
+    return faces_output
 
 def vision(event, context):
     """Detecta emoções faciais em uma imagem armazenada no S3."""
@@ -52,17 +48,28 @@ def vision(event, context):
         # Extrai e valida o corpo da requisição
         body = json.loads(event.get('body', '{}'))
         bucket = body.get('bucket')
-        image_name = body.get('imageName')
+        image_name = body.get('imageName')  # A imagem deve ser 'test-happy.jpg'
 
+        # Valida se os campos estão preenchidos
         if not bucket or not image_name:
-            return create_response(400, "Faltando 'bucket' ou 'imageName' no corpo da requisição")
+            logger.error("Faltando o nome do bucket ou da imagem.")
+            return create_response(400, {
+                "error": "Faltando o nome do bucket ou da imagem."
+            })
 
         # Verifica se o bucket é permitido
         if bucket != os.getenv('BUCKET_NAME'):
+            logger.error("Bucket não permitido: %s", bucket)
             return create_response(403, "Bucket não permitido.")
 
+        # Obtém o nome da pasta da variável de ambiente
+        folder_name = os.getenv('FOLDER_NAME')
+        if not folder_name:
+            logger.error("FOLDER_NAME não está definido nas variáveis de ambiente.")
+            return create_response(500, "Erro interno: FOLDER_NAME não definido.")
+
         # Prepara o caminho da imagem
-        image_key = f"myphotos/{image_name}"
+        image_key = f"{folder_name}/{image_name}"
         image_url = f"https://{bucket}.s3.amazonaws.com/{image_key}"
 
         # Chama o AWS Rekognition para detectar emoções
@@ -81,45 +88,10 @@ def vision(event, context):
 
     except json.JSONDecodeError:
         logger.error("JSON inválido no corpo da requisição.")
-        return create_response(400, "JSON inválido no corpo da requisição")
+        return create_response(400, "JSON inválido no corpo da requisição.")
     except ClientError as e:
         logger.error(f"Erro ao chamar Rekognition: {e}")
         return create_response(500, "Erro ao chamar o serviço Rekognition.")
     except Exception as e:
         logger.error(f"Erro inesperado: {str(e)}")
         return create_response(500, "Erro interno do servidor")
-
-def process_faces(faces_detected, image_url):
-    """Processa as faces detectadas e retorna a estrutura de resposta."""
-    if not faces_detected:
-        return [{
-            "position": {
-                "Height": None, "Left": None, "Top": None, "Width": None
-            },
-            "classified_emotion": None,
-            "classified_emotion_confidence": None
-        }]
-
-    faces_output = []
-    for face in faces_detected:
-        emotions = face.get('Emotions', [])
-        if emotions:
-            primary_emotion = max(emotions, key=lambda x: x['Confidence'])
-            faces_output.append({
-                "position": face['BoundingBox'],
-                "classified_emotion": primary_emotion['Type'],
-                "classified_emotion_confidence": primary_emotion['Confidence']
-            })
-    return faces_output
-
-def create_response(status_code, message):
-    """Cria uma resposta padronizada."""
-    if isinstance(message, dict):
-        body = message
-    else:
-        body = {"message": message}
-    
-    return {
-        "statusCode": status_code,
-        "body": json.dumps(body)
-    }

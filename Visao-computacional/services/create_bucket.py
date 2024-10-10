@@ -4,18 +4,25 @@ import boto3
 import json
 from botocore.exceptions import ClientError
 import importlib
+from dotenv import load_dotenv
 
-# Adiciona o caminho do diretório pai ao sys.path
+# Carrega as variáveis de ambiente do arquivo .env
+load_dotenv()
+
+print("Diretório atual:", os.getcwd())
+
+# Adiciona o caminho do diretório pai ao sys.path (caso necessário)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Importa o módulo para adicionar variáveis de ambiente
+# Importa o módulo para adicionar variáveis de ambiente (se existir)
 try:
     add_env_var = importlib.import_module("utils.check_env").add_env_var
 except ModuleNotFoundError as e:
     print(f"Erro ao importar o módulo: {e}")
-    sys.exit(1)
+    add_env_var = None
 
-def create_bucket(bucket_name):
+def create_bucket_if_not_exists(bucket_name):
+    """Cria o bucket no S3 caso ele não exista."""
     s3 = boto3.client('s3')
 
     try:
@@ -72,12 +79,45 @@ def create_bucket(bucket_name):
             print(f"Erro ao verificar o bucket: {e}")
             return False
 
-    # Adiciona informações ao .env se o bucket foi criado com sucesso
-    add_env_var({
-        "BUCKET_NAME": bucket_name, 
-        "VISION_S3_DIR": "myphotos"  # Diretório para o projeto
-    })
-    print(f"Variáveis de ambiente adicionadas com sucesso.")
+def upload_image_to_s3(bucket_name, file_name, s3_key):
+    """Faz o upload de uma imagem para o S3."""
+    s3 = boto3.client('s3')
+    try:
+        # Faz o upload da imagem
+        s3.upload_file(file_name, bucket_name, s3_key)
+        print(f"Imagem {file_name} enviada com sucesso para {s3_key} no bucket {bucket_name}.")
+    except ClientError as e:
+        print(f"Erro ao fazer upload da imagem: {e}")
 
 if __name__ == "__main__":
-    create_bucket("photogrupo3")
+    # Nome do bucket a partir do arquivo .env
+    bucket_name = os.getenv('BUCKET_NAME')
+
+    # Caminho da pasta que contém as imagens
+    folder_path = 'imagens_bucket'
+
+    # Lista de imagens a partir do arquivo .env
+    image_files = [
+        os.getenv('IMAGE_NAME_1'),
+        os.getenv('IMAGE_NAME_2'),
+        os.getenv('IMAGE_NAME_3'),
+        os.getenv('IMAGE_NAME_4')
+    ]
+
+    # Cria o bucket se ele não existir
+    if create_bucket_if_not_exists(bucket_name):
+        # Faz o upload de cada imagem na lista
+        for file_name in image_files:
+            if file_name:  # Verifica se o nome do arquivo não é None
+                # Cria o caminho completo para a imagem
+                full_file_path = os.path.join(folder_path, file_name)
+                s3_key = f"{os.getenv('FOLDER_NAME')}/{file_name}"  # Define a chave no S3 para simular a pasta
+                upload_image_to_s3(bucket_name, full_file_path, s3_key)
+
+        # Adiciona as variáveis de ambiente (se o método estiver disponível)
+        if add_env_var:
+            add_env_var({
+                "BUCKET_NAME": bucket_name,
+                "VISION_S3_DIR": os.getenv('FOLDER_NAME')  # Diretório para o projeto
+            })
+            print("Variáveis de ambiente adicionadas com sucesso.")

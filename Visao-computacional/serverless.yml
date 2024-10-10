@@ -12,23 +12,27 @@ provider:
         - logs:CreateLogGroup
         - logs:CreateLogStream
         - logs:PutLogEvents
-      Resource: arn:aws:logs:*:*:*  
+      Resource: arn:aws:logs:*:*:*  # Permissões para logs
 
     - Effect: Allow
       Action:
         - rekognition:DetectFaces
         - rekognition:DetectLabels
-      Resource: "*"
+      Resource: "*"  # Permissões para Rekognition
 
     - Effect: Allow
       Action: s3:GetObject
-      Resource: arn:aws:s3:::photogrupo3/*
+      Resource: arn:aws:s3:::photogrupo3/*  # Permissões para acessar objetos no S3
 
     - Effect: Allow
       Action:
         - bedrock:InvokeModel
         - bedrock:ListModels
-      Resource: "*"
+      Resource: "*"  # Permissões para Bedrock
+
+  environment:
+    BUCKET_NAME: "${env:BUCKET_NAME}"  # Nome do bucket S3
+    FOLDER_NAME: "${env:FOLDER_NAME}"     # Nome da pasta única
 
 functions:
   visionHealthCheck:
@@ -55,26 +59,26 @@ functions:
   visionDetectFaces:
     handler: handlers/lambda_handler.vision
     events:
-      - httpApi:  
+      - httpApi:
           path: /v1/vision
           method: post
-    timeout: 60 
-    environment:
-      BUCKET_NAME: "photogrupo3"
-    layers:
-      - arn:aws:lambda:us-east-1:891377265245:layer:my-layer:1
+    timeout: 60  # Timeout para a função
 
   visionDetectPets:
-    handler: handlers/lambda_pet.handler_pets
+    handler: handlers/lambda_handler.vision
     events:
       - httpApi:
           path: /v2/vision
-          method: post  
-    timeout: 60
-    environment:
-      BUCKET_NAME: "photogrupo3v1"
-    layers:
-      - arn:aws:lambda:us-east-1:891377265245:layer:my-layer:1
+          method: post
+    timeout: 60  # Timeout para a função
+
+package:
+  exclude:
+    - node_modules/**
+    - tests/**
+    - .git/**
+    - README.md
+    - utils/**
 
 plugins:
   - serverless-python-requirements
@@ -83,9 +87,4 @@ plugins:
 custom:
   pythonRequirements:
     dockerizePip: false
-    fileName: ../requirements.txt  
-
-
-environment:
-  dotenv:
-    path: ../.env  
+    fileName: ../requirements.txt  # Arquivo de requisitos do Python

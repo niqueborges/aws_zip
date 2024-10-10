@@ -1,66 +1,50 @@
-import boto3
 import json
+import boto3
 import logging
+import os
 from botocore.exceptions import ClientError
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def invoke_bedrock_model(
-    model_id: str,
-    text: str,
-    cfg_scale: int = 8,
-    seed: int = 0,
-    quality: str = "standard",
-    width: int = 1024,
-    height: int = 1024,
-    number_of_images: int = 3
-) -> dict:
-    """
-    Invoca um modelo no AWS Bedrock para gerar imagens a partir de texto.
+# Inicializa a sessão e o cliente Bedrock Runtime
+session = boto3.Session(region_name='us-east-1')  # Certifique-se de usar a região correta
+bedrock_client = session.client('bedrock-runtime')
 
-    Args:
-        model_id (str): ID do modelo a ser invocado.
-        text (str): Texto que será usado para a geração da imagem.
-        cfg_scale (int): Escala de configuração para o modelo.
-        seed (int): Semente para a geração aleatória.
-        quality (str): Qualidade da imagem gerada.
-        width (int): Largura da imagem gerada.
-        height (int): Altura da imagem gerada.
-        number_of_images (int): Número de imagens a serem geradas.
+# Exemplo de invocação do modelo Titan Text G1 - Express
+model_id = 'amazon.titan-text-express-v1'  # ID correto do modelo Titan Text G1 - Express
+input_text = "Um exemplo de descrição para gerar um texto."  # Texto de exemplo
 
-    Returns:
-        dict: Resultado da invocação do modelo, incluindo imagens geradas ou mensagens de erro.
-    """
-    if not model_id or not text:
-        return {"error": "model_id e text são obrigatórios."}
-    
-    bedrock_client = boto3.client('bedrock')
+# Estrutura do corpo da requisição para geração de texto
+native_request = {
+    "inputText": input_text,
+    "textGenerationConfig": {
+        "maxTokenCount": 500,  # Ajuste o número máximo de tokens gerados
+        "temperature": 0.7,    # Controla a aleatoriedade das respostas (0.0 para determinístico)
+        "topP": 0.9,           # Top-p sampling para limitar a probabilidade cumulativa
+    },
+}
 
-    request_body = {
-        "textToImageParams": {"text": text},
-        "taskType": "TEXT_IMAGE",
-        "imageGenerationConfig": {
-            "cfgScale": cfg_scale,
-            "seed": seed,
-            "quality": quality,
-            "width": width,
-            "height": height,
-            "numberOfImages": number_of_images
-        }
-    }
+logger.info(f"Iniciando a invocação do modelo: {model_id} com texto: {input_text}")
 
-    try:
-        logger.info(f"Iniciando a invocação do modelo: {model_id} com texto: {text}")
-        response = bedrock_client.invoke_model(
-            ModelId=model_id,
-            ContentType="application/json",
-            Body=json.dumps(request_body)
-        )
+try:
+    # Invocação do modelo de geração de texto
+    response = bedrock_client.invoke_model(
+        modelId=model_id,
+        body=json.dumps(native_request),
+        contentType='application/json'
+    )
 
-        return json.loads(response['Body'].read())
-    
-    except ClientError as e:
-        logger.error(f"Erro ao invocar o modelo: {e}")
-        return {"error": "Erro ao invocar o modelo no Bedrock", "message": str(e)}
+    # Processando a resposta
+    model_response = json.loads(response['body'].read())
+    logger.info(f"Resposta do modelo: {model_response}")
+    print(f"Texto gerado: {model_response}")
+
+except ClientError as e:
+    logger.error(f"Erro ao invocar o modelo: {e}")
+    print({"error": "Erro ao invocar o modelo no Bedrock", "message": str(e)})
+
+except Exception as e:
+    logger.error(f"Erro inesperado: {e}")
+    print({"error": "Erro inesperado ao invocar o modelo", "message": str(e)})

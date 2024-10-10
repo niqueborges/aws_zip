@@ -1,6 +1,10 @@
 import boto3
 from botocore.exceptions import ClientError
 from typing import Dict, Any, Union
+import os
+
+# Carrega o nome da pasta a partir do arquivo .env
+FOLDER_NAME = os.getenv("FOLDER_NAME", "myphotos")  # Substitua "myphotos" pelo valor padrão desejado
 
 def get_image_details(bucket_name: str, image_name: str) -> Union[Dict[str, Any], Dict[str, str]]:
     """
@@ -15,7 +19,7 @@ def get_image_details(bucket_name: str, image_name: str) -> Union[Dict[str, Any]
               ou uma mensagem de erro caso a operação falhe.
     """
     s3_client = boto3.client("s3")
-    image_key = f"myphotos/{image_name}"
+    image_key = f"{FOLDER_NAME}/{image_name}"  # Constrói o caminho da imagem com base na pasta
 
     try:
         response = s3_client.head_object(Bucket=bucket_name, Key=image_key)
@@ -46,7 +50,7 @@ def detect_face_emotions(bucket_name: str, image_name: str) -> Union[Dict[str, A
         dict: Dados das emoções detectadas ou mensagem de erro.
     """
     rekognition = boto3.client('rekognition')
-    image_key = f"myphotos/{image_name}"
+    image_key = f"{FOLDER_NAME}/{image_name}"  # Constrói o caminho da imagem com base na pasta
 
     try:
         response = rekognition.detect_faces(
@@ -55,7 +59,8 @@ def detect_face_emotions(bucket_name: str, image_name: str) -> Union[Dict[str, A
         )
 
         if response['FaceDetails']:
-            return {"Emotions": response['FaceDetails'][0]['Emotions']}
+            emotions = response['FaceDetails'][0]['Emotions']
+            return {"Emotions": emotions}
         else:
             return {"error": "Nenhuma face detectada na imagem"}
 

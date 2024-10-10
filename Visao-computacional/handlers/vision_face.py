@@ -3,6 +3,10 @@ import json
 import logging
 import sys
 from botocore.exceptions import ClientError
+from dotenv import load_dotenv  # Importa a biblioteca dotenv
+
+# Carrega as variáveis do arquivo .env
+load_dotenv()  # Isso irá carregar automaticamente as variáveis de ambiente do arquivo .env
 
 # Configuração do logger
 logging.basicConfig(level=logging.INFO)
@@ -15,6 +19,17 @@ sys.path.append(parent_dir)
 
 from services.bedrock_runtime import invoke_bedrock_model
 from services.get_image import get_image_details, detect_face_emotions
+
+# Obtém o nome da pasta da variável de ambiente
+FOLDER_NAME = os.getenv("FOLDER_NAME", "myphotos")  # Substitua "myphotos" pelo nome padrão desejado
+
+def check_env_vars():
+    """Verifica se todas as variáveis de ambiente obrigatórias estão definidas."""
+    required_vars = ['AWS_REGION', 'BUCKET_NAME', 'FOLDER_NAME']
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    
+    if missing_vars:
+        raise EnvironmentError(f"Faltando variáveis de ambiente: {', '.join(missing_vars)}")
 
 def validate_input(body):
     """
@@ -31,6 +46,8 @@ def validate_input(body):
         errors["bucket"] = "O campo 'bucket' é obrigatório."
     if not body.get("imageName"):
         errors["imageName"] = "O campo 'imageName' é obrigatório."
+    if not body.get("folderName") or body["folderName"] != FOLDER_NAME:
+        errors["folderName"] = f"O campo 'folderName' é obrigatório e deve ser '{FOLDER_NAME}'."
     return len(errors) == 0, errors
 
 def v1_vision(event, context):
@@ -45,6 +62,9 @@ def v1_vision(event, context):
     Returns:
         dict: Resposta em formato JSON com os detalhes da imagem, emoções detectadas ou mensagem de erro.
     """
+    # Verifica se as variáveis de ambiente estão definidas
+    check_env_vars()
+
     try:
         body = json.loads(event.get("body", "{}"))  # Carrega o corpo da requisição
     except json.JSONDecodeError:
@@ -58,7 +78,8 @@ def v1_vision(event, context):
         return {"statusCode": 400, "body": json.dumps({"error": "Erro de validação", "details": errors})}
 
     bucket_name = body["bucket"]
-    image_path = f"myphotos/{body['imageName']}"  # Inclui a pasta 'myphotos' no caminho
+    folder_name = body["folderName"]  # Espera-se que seja igual a FOLDER_NAME
+    image_path = f"{folder_name}/{body['imageName']}"  # Usa a pasta selecionada no caminho da imagem
 
     # Obtém detalhes da imagem
     s3_image_details = get_image_details(bucket_name, image_path)
@@ -88,3 +109,4 @@ def v1_vision(event, context):
         "statusCode": 200,
         "body": json.dumps(response_body, indent=4, ensure_ascii=True)
     }
+
