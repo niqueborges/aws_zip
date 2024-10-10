@@ -12,27 +12,27 @@ provider:
         - logs:CreateLogGroup
         - logs:CreateLogStream
         - logs:PutLogEvents
-      Resource: arn:aws:logs:*:*:*  # Permissões para logs
+      Resource: arn:aws:logs:*:*:*  
 
     - Effect: Allow
       Action:
         - rekognition:DetectFaces
         - rekognition:DetectLabels
-      Resource: "*"  # Permissões para Rekognition
+      Resource: "*"  
 
     - Effect: Allow
       Action: s3:GetObject
-      Resource: arn:aws:s3:::photogrupo3/*  # Permissões para acessar objetos no S3
+      Resource: arn:aws:s3:::photogrupo3/*  
 
     - Effect: Allow
       Action:
         - bedrock:InvokeModel
         - bedrock:ListModels
-      Resource: "*"  # Permissões para Bedrock
+      Resource: "*"  
 
   environment:
-    BUCKET_NAME: "${env:BUCKET_NAME}"  # Nome do bucket S3
-    FOLDER_NAME: "${env:FOLDER_NAME}"     # Nome da pasta única
+    BUCKET_NAME: "${env:BUCKET_NAME}"  
+    FOLDER_NAME: "${env:FOLDER_NAME}"     
 
 functions:
   visionHealthCheck:
@@ -62,7 +62,7 @@ functions:
       - httpApi:
           path: /v1/vision
           method: post
-    timeout: 60  # Timeout para a função
+    timeout: 100
 
   visionDetectPets:
     handler: handlers/lambda_handler.vision
@@ -70,15 +70,7 @@ functions:
       - httpApi:
           path: /v2/vision
           method: post
-    timeout: 60  # Timeout para a função
-
-package:
-  exclude:
-    - node_modules/**
-    - tests/**
-    - .git/**
-    - README.md
-    - utils/**
+    timeout: 100 
 
 plugins:
   - serverless-python-requirements
@@ -87,4 +79,13 @@ plugins:
 custom:
   pythonRequirements:
     dockerizePip: false
-    fileName: ../requirements.txt  # Arquivo de requisitos do Python
+    fileName: ../requirements.txt  
+
+package:
+  exclude:
+    - utils/**
+    - .gitignore
+    - .git/**               # Ignora todos os arquivos e pastas do diretório .git
+    - .aws_bedrock.py/**    # Ignora a pasta .aws_bedrock.py
+    - .aws_bedrock/**        # Ignora todos os arquivos e pastas do diretório .aws_bedrock
+    - .app/**                # Ignora todos os arquivos e pastas do diretório .app
